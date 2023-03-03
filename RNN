@@ -1,0 +1,62 @@
+from tensorflow import keras
+import pandas as pd
+from keras import metrics
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import functools
+#from sklearn.preprocessing import MinMaxScaler
+import numpy as np
+import tensorflow as tf
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import LSTM
+from keras.layers import Dropout
+#from sklearn.preprocessing import MinMaxScaler
+from keras.layers import Dense, SimpleRNN
+
+dataset = pd.read_csv(r'C:\Users\15691\Downloads\dataset_2\dataset.csv')
+dataset = dataset.iloc[0:,2:].values
+#scaler = MinMaxScaler()
+#scaler.fit(dataset)
+#dataset = scaler.transform(dataset)
+
+
+train_size = int(0.8 * len(dataset)/400)*400
+train_X = dataset[:train_size, :-3]
+
+train_X = keras.utils.normalize(train_X)
+train_Y = dataset[:train_size, -3:]
+mean_Y = np.mean(train_Y)#均值
+std_Y = np.std(train_Y)#标准差
+train_Y = keras.utils.normalize(train_Y)
+test_X = dataset[train_size:, :-3]
+
+test_X = keras.utils.normalize(test_X)
+test_Y = dataset[train_size:, -3:]
+
+test_Y = keras.utils.normalize(test_Y)
+time_steps = 4000# simulationszeit=40s
+features_input = 5
+features_output = 3
+train_X = np.reshape(train_X, [76,time_steps, features_input])
+train_Y = np.reshape(train_Y, (76,time_steps, features_output))
+test_X =np.reshape(test_X,[19,time_steps, features_input])
+test_Y =np.reshape(test_Y,[19,time_steps, features_output])
+
+model = Sequential()
+model.add(SimpleRNN(units=5, input_shape=(time_steps, features_input), return_sequences=True))
+model.add(SimpleRNN(units = 50, return_sequences = True))
+model.add(SimpleRNN(units =50, return_sequences = True))
+model.add(Dense(units=3, activation='sigmoid'))
+model.compile(loss='mean_squared_error', optimizer='adam',metrics=[metrics.mean_absolute_error])
+model.fit(train_X, train_Y, epochs=5, batch_size=5,shuffle=False)
+score = model.evaluate(test_X, test_Y, batch_size=10)
+print(score)
+
+
+predict_Y = model.predict(test_X)
+predict_Y =predict_Y * std_Y+ mean_Y
+print(predict_Y)
+
+
